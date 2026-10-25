@@ -1,0 +1,180 @@
+{
+  "title": "SOYO DG Inverter",
+  "config": {
+    "step": {
+      "user": {
+        "title": "SOYO-DG Grid-Tied Inverter",
+        "description": "Connect your inverter from the web.soyo-dg.com platform to Home Assistant.",
+        "data": {
+          "auth_mode": "Authentication method"
+        }
+      },
+      "token": {
+        "title": "Paste the refresh token",
+        "description": "On a browser where you are signed in to web.soyo-dg.com, press F12 → Console → run:\n\n`copy(localStorage.getItem('nbq_refresh_token'))`\n\nthen paste the copied value below. Home Assistant only stores this token, never your account password.\n\n{help}",
+        "data": {
+          "refresh_token": "Refresh token"
+        }
+      },
+      "account": {
+        "title": "Account sign-in",
+        "description": "Enter the account and password you use on web.soyo-dg.com.",
+        "data": {
+          "username": "Account",
+          "password": "Password"
+        }
+      },
+      "device": {
+        "title": "Select a device",
+        "description": "Choose the inverter to add.",
+        "data": {
+          "device_sn": "Device serial number"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure authentication",
+        "description": "Paste a new refresh token, or enter your account and password.",
+        "data": {
+          "refresh_token": "Refresh token",
+          "username": "Account",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Authentication failed. Check the refresh token or your account details.",
+      "cannot_connect": "Could not reach the soyo-dg platform. Try again later.",
+      "unknown": "An unexpected error occurred.",
+      "no_device_found": "No devices are bound to these credentials."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling settings",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power": {
+        "name": "Power"
+      },
+      "dc_voltage": {
+        "name": "DC voltage"
+      },
+      "dc_current": {
+        "name": "DC current"
+      },
+      "ac_voltage": {
+        "name": "AC voltage"
+      },
+      "ac_frequency": {
+        "name": "AC frequency"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "collector_power": {
+        "name": "Load power"
+      },
+      "peak_power": {
+        "name": "Peak power"
+      },
+      "today_energy": {
+        "name": "Energy today"
+      },
+      "total_energy": {
+        "name": "Total energy"
+      },
+      "month_energy": {
+        "name": "Energy this month"
+      },
+      "yesterday_energy": {
+        "name": "Energy yesterday"
+      },
+      "data_age": {
+        "name": "Data age"
+      },
+      "last_reported": {
+        "name": "Last reported"
+      },
+      "work_mode": {
+        "name": "Operation mode",
+        "state": {
+          "pv": "PV generation",
+          "pv_limit": "PV power limit",
+          "battery_constant": "Battery constant power",
+          "battery_limit": "Battery power limit"
+        }
+      },
+      "power_status": {
+        "name": "Operation status",
+        "state": {
+          "working": "Generating",
+          "standby": "Standby",
+          "fault": "Fault"
+        }
+      },
+      "error_message": {
+        "name": "Fault message"
+      },
+      "notice_message": {
+        "name": "Notice message"
+      },
+      "model": {
+        "name": "Model"
+      }
+    },
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Online"
+      },
+      "collector_connected": {
+        "name": "Collector connected"
+      },
+      "data_fresh": {
+        "name": "Data fresh"
+      },
+      "fault": {
+        "name": "Fault"
+      }
+    },
+    "select": {
+      "work_mode": {
+        "name": "Operation mode",
+        "state": {
+          "pv": "PV generation",
+          "pv_limit": "PV power limit",
+          "battery_constant": "Battery constant power",
+          "battery_limit": "Battery power limit"
+        }
+      }
+    },
+    "number": {
+      "delay_start_sec": {
+        "name": "Delay start"
+      },
+      "battery_out_w": {
+        "name": "Battery output power"
+      },
+      "battery_start_v": {
+        "name": "Startup voltage"
+      },
+      "battery_protect_v": {
+        "name": "Undervoltage protection"
+      }
+    },
+    "button": {
+      "reboot": {
+        "name": "Reboot device"
+      }
+    }
+  }
+}
