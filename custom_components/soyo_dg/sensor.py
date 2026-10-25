@@ -108,7 +108,8 @@ SENSORS: tuple[SoyoDGSensorDescription, ...] = (
         key="today_energy",
         source_keys=("today_energy",),
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.MEASUREMENT,
+        # 每日重置,所以是 total(會下降),不是 total_increasing
+        state_class=SensorStateClass.TOTAL,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         suggested_display_precision=2,
     ),
@@ -124,7 +125,8 @@ SENSORS: tuple[SoyoDGSensorDescription, ...] = (
         key="month_energy",
         source_keys=("month_energy",),
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.MEASUREMENT,
+        # 每月重置,同上
+        state_class=SensorStateClass.TOTAL,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         suggested_display_precision=2,
     ),
@@ -182,7 +184,8 @@ class SoyoDGEnergyHistorySensor(SoyoDGEntity, SensorEntity):
     """昨日發電量(來自 stat-history 的 daily 陣列)。"""
 
     _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    # 昨日總量,是固定值(每天換一次),屬於 total
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_suggested_display_precision = 2
 
