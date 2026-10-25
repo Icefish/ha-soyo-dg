@@ -20,6 +20,7 @@
 | **button** | 重啟設備 |
 
 累計發電量是 `total_increasing`,可以直接加進 **Energy Dashboard**。
+今日 / 本月 / 昨日發電量是 `total`(會隨日、月重置,所以值會下降)。
 
 ---
 
