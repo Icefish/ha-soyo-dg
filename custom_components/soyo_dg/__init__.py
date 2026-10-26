@@ -18,6 +18,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import SoyoDGAuthError, SoyoDGClient, SoyoDGError
@@ -36,6 +37,39 @@ from .coordinator import SoyoDGCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORM_SETUP: list[Platform] = [Platform(p) for p in PLATFORMS]
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """設定項升級。
+
+    v1 → v2:移除了「最後回報時間」這個 TIMESTAMP sensor。
+
+    獨立的 TIMESTAMP sensor 會被 HA 寫進 logbook(HA 只跳過有 unit、
+    state_class 或數字型 device_class 的「連續型」sensor),每次輪詢都
+    產生一筆紀錄,讓活動列表一直跳。現在這個資訊改放在「資料年齡」
+    sensor 的 last_reported 屬性裡,不會再污染 logbook。
+
+    舊的 entity 還會留在 entity registry 裡變成 unavailable,
+    這裡順手把它清掉。
+    """
+    if entry.version > 2:
+        # 這個版本比整合還新,不要動。
+        return False
+
+    if entry.version == 1:
+        registry = er.async_get(hass)
+        device_sn = entry.data.get(CONF_DEVICE_SN)
+        if device_sn:
+            entity_id = registry.async_get_entity_id(
+                "sensor", DOMAIN, f"{device_sn}_last_reported"
+            )
+            if entity_id:
+                _LOGGER.info("移除已淘汰的 entity: %s", entity_id)
+                registry.async_remove(entity_id)
+
+        hass.config_entries.async_update_entry(entry, version=2)
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

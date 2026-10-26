@@ -100,10 +100,12 @@
         "name": "昨日發電量"
       },
       "data_age": {
-        "name": "資料年齡"
-      },
-      "last_reported": {
-        "name": "最後回報時間"
+        "name": "資料年齡",
+        "state_attributes": {
+          "last_reported": {
+            "name": "最後回報時間"
+          }
+        }
       },
       "work_mode": {
         "name": "運行模式",

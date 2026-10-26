@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -146,7 +146,6 @@ async def async_setup_entry(
     ]
     entities.append(SoyoDGEnergyHistorySensor(coordinator, entry, "yesterday_energy"))
     entities.append(SoyoDGDataAgeSensor(coordinator, entry, "data_age"))
-    entities.append(SoyoDGLastReportedSensor(coordinator, entry, "last_reported"))
     entities.append(SoyoDGTextSensor(coordinator, entry, "work_mode"))
     entities.append(SoyoDGTextSensor(coordinator, entry, "power_status"))
     entities.append(SoyoDGTextSensor(coordinator, entry, "error_message"))
@@ -209,7 +208,13 @@ class SoyoDGEnergyHistorySensor(SoyoDGEntity, SensorEntity):
 
 
 class SoyoDGDataAgeSensor(SoyoDGEntity, SensorEntity):
-    """資料年齡(距離設備最後回報幾秒)。"""
+    """資料年齡(距離設備最後回報幾秒)。
+
+    「最後回報時間」放在這個 sensor 的屬性(last_reported)而不是另外開一個
+    TIMESTAMP sensor。HA 的 logbook 只會跳過「連續型」sensor(有 unit、
+    state_class,或數字型 device_class),TIMESTAMP 屬於 NON_NUMERIC,
+    獨立的話每次輪詢都會被寫進 logbook,讓活動列表一直跳。
+    """
 
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -228,23 +233,11 @@ class SoyoDGDataAgeSensor(SoyoDGEntity, SensorEntity):
         age = self.coordinator.data_age
         return None if age is None else round(age, 1)
 
-
-class SoyoDGLastReportedSensor(SoyoDGEntity, SensorEntity):
-    """設備最後回報資料的時間。"""
-
-    _attr_device_class = SensorDeviceClass.TIMESTAMP
-    _attr_icon = "mdi:clock-outline"
-
-    def __init__(
-        self, coordinator: SoyoDGCoordinator, entry: ConfigEntry, key: str
-    ) -> None:
-        super().__init__(coordinator, entry, key)
-        self._attr_translation_key = key
-
     @property
-    def native_value(self) -> datetime | None:
-        """回傳最後回報時間。"""
-        return self.coordinator.reported_at
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """附上設備最後回報的時間點。"""
+        reported = self.coordinator.reported_at
+        return {"last_reported": reported.isoformat() if reported else None}
 
 
 class SoyoDGTextSensor(SoyoDGEntity, SensorEntity):

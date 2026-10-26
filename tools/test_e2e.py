@@ -30,6 +30,8 @@ COMPONENT_DIR = TOOLS_DIR.parent / "custom_components" / "soyo_dg"
 
 from mock_soyo import Mock  # noqa: E402
 
+DOMAIN = "soyo_dg"
+
 PASSED: list[str] = []
 FAILED: list[str] = []
 
@@ -133,7 +135,7 @@ async def run_tests() -> int:
             ("sensor", "peak_power"), ("sensor", "today_energy"),
             ("sensor", "total_energy"), ("sensor", "month_energy"),
             ("sensor", "yesterday_energy"), ("sensor", "data_age"),
-            ("sensor", "last_reported"), ("sensor", "work_mode"),
+            ("sensor", "work_mode"),
             ("sensor", "power_status"), ("sensor", "error_message"),
             ("sensor", "notice_message"), ("sensor", "model"),
             ("binary_sensor", "connectivity"),
@@ -208,6 +210,44 @@ async def run_tests() -> int:
 
         s = state_of("binary_sensor", "collector_connected")
         check("collector_connected = on", s is not None and s.state == "on", s.state if s else "None")
+
+        # ---------- logbook 噪音 ----------
+        print("\n[3b] logbook 不會一直跳")
+        # 獨立的 TIMESTAMP sensor 會被寫進 logbook(HA 只跳過「連續型」
+        # sensor),所以「最後回報時間」不能是一個獨立的 entity。
+        check(
+            "last_reported 不是獨立 entity",
+            ("sensor", "last_reported") not in by_key,
+        )
+        s = state_of("sensor", "data_age")
+        check(
+            "data_age 有 last_reported 屬性",
+            s is not None and s.attributes.get("last_reported") is not None,
+            str(s.attributes.get("last_reported")) if s else "None",
+        )
+        # 屬性必須是 HA 吃得下去的 ISO 8601 字串(帶時區)
+        from datetime import datetime as _dt
+
+        raw = s.attributes.get("last_reported") if s else None
+        parsed = None
+        if isinstance(raw, str):
+            try:
+                parsed = _dt.fromisoformat(raw)
+            except ValueError:
+                parsed = None
+        check(
+            "last_reported 是帶時區的 ISO 8601",
+            parsed is not None and parsed.tzinfo is not None,
+            str(raw),
+        )
+        # 用 HA 自己的判斷確認資料年齡不會進 logbook
+        from homeassistant.components.logbook.helpers import is_sensor_continuous
+
+        check(
+            "data_age 不會被寫進 logbook",
+            s is not None
+            and is_sensor_continuous(hass, er.async_get(hass), s.entity_id),
+        )
 
         # ---------- 裝置註冊 ----------
         print("\n[4] 裝置註冊")
@@ -292,6 +332,52 @@ async def run_tests() -> int:
             entry.state is config_entries.ConfigEntryState.NOT_LOADED,
             f"state={entry.state}",
         )
+
+        # ---------- 舊版 entity 清理 ----------
+        # 模擬已經有舊版本(有 last_reported sensor)的安裝:
+        # 先手動塞一個舊 entity 進 registry,再載入 v2 的 config entry,
+        # 確認 migration 會把它清掉。
+        print("\n[8] 舊版 last_reported entity 清理")
+        reg = er.async_get(hass)
+        stale = reg.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            "SNY00000001_last_reported",
+            config_entry=entry,
+            suggested_object_id="stale_last_reported",
+        )
+        check("舊 entity 有塞進 registry", stale is not None)
+
+        old_entry = config_entries.ConfigEntry(
+            version=1,
+            minor_version=1,
+            domain=DOMAIN,
+            title="Migration",
+            data={
+                "refresh_token": "refresh-1",
+                "device_sn": "SNY00000001",
+                "scan_interval": 30,
+            },
+            options={},
+            source="user",
+            unique_id="soyo_migration_test",
+            entry_id="soyomigtest0001",
+            discovery_keys=MappingProxyType({}),
+            subentries_data=None,
+        )
+        await hass.config_entries.async_add(old_entry)
+        await hass.async_block_till_done()
+        check(
+            "v1 config entry 有升級到 v2",
+            old_entry.version == 2,
+            f"version={old_entry.version}",
+        )
+        check(
+            "舊的 last_reported entity 已被清掉",
+            reg.async_get("sensor.stale_last_reported") is None,
+        )
+        await hass.config_entries.async_unload(old_entry.entry_id)
+        await hass.async_block_till_done()
 
     finally:
         try:

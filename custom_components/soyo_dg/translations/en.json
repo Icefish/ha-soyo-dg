@@ -100,10 +100,12 @@
         "name": "Energy yesterday"
       },
       "data_age": {
-        "name": "Data age"
-      },
-      "last_reported": {
-        "name": "Last reported"
+        "name": "Data age",
+        "state_attributes": {
+          "last_reported": {
+            "name": "Last reported"
+          }
+        }
       },
       "work_mode": {
         "name": "Operation mode",
